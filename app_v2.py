@@ -61,24 +61,57 @@ except Exception as e:
 # ==================== SESSION STATE ====================
 if "otp_verified" not in st.session_state:
     st.session_state.otp_verified = False
+if "sdk_ready" not in st.session_state:
+    st.session_state.sdk_ready = False
 
-# ==================== OTP INPUT (if needed) ====================
-if not st.session_state.otp_verified:
-    st.info("🔐 Nubra SDK requires OTP verification. Check your phone for the OTP message.")
-    with st.form("otp_form"):
-        otp_input = st.text_input("Enter OTP:", type="password", placeholder="Enter 6-digit OTP")
-        submit_btn = st.form_submit_button("Verify OTP")
+# ==================== OTP INPUT FORM ====================
+def show_otp_form():
+    """Display OTP input form"""
+    st.warning("🔐 **Nubra SDK Authentication Required**")
+    st.info("An OTP has been sent to your registered phone number. Please enter it below to initialize the trading system.")
+    
+    with st.form("otp_verification_form", clear_on_submit=True):
+        otp_input = st.text_input(
+            "Enter 6-digit OTP:",
+            placeholder="000000",
+            max_chars=6,
+            type="password"
+        )
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            submit_btn = st.form_submit_button("✓ Verify OTP", use_container_width=True)
+        with col2:
+            resend_btn = st.form_submit_button("↻ Resend OTP", use_container_width=True)
         
         if submit_btn and otp_input:
-            try:
-                # Try to use OTP with the SDK (if it supports it)
-                import os
-                os.environ["OTP"] = otp_input
-                st.session_state.otp_verified = True
-                st.success("OTP submitted! Reinitializing SDK...")
-                st.rerun()
-            except Exception as e:
-                st.error(f"OTP verification failed: {e}")
+            if len(otp_input) != 6 or not otp_input.isdigit():
+                st.error("❌ Invalid OTP format. Please enter a 6-digit number.")
+            else:
+                with st.spinner("Verifying OTP and initializing SDK..."):
+                    try:
+                        from fetch_chain import initialize_sdk_with_otp
+                        success, message = initialize_sdk_with_otp(otp_input)
+                        
+                        if success:
+                            st.session_state.otp_verified = True
+                            st.session_state.sdk_ready = True
+                            st.success("✓ OTP verified! SDK initialized successfully.")
+                            st.rerun()
+                        else:
+                            st.error(f"❌ Verification failed: {message}")
+                    except Exception as e:
+                        st.error(f"❌ Error during verification: {str(e)}")
+        
+        if resend_btn:
+            st.info("📱 Resending OTP to your registered phone number...")
+
+# Show OTP form if not verified
+if not st.session_state.otp_verified:
+    show_otp_form()
+    st.stop()
+
+# ==================== MAIN APP (Only shown after OTP verification) ====================
 
 # ==================== SIDEBAR CONTROLS ====================
 st.sidebar.markdown("### ⚙️ CONTROLS")

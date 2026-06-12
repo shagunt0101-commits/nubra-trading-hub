@@ -1,24 +1,44 @@
 import pandas as pd
 import os
+import subprocess
+import sys
 from nubra_python_sdk.start_sdk import InitNubraSdk, NubraEnv
 from nubra_python_sdk.marketdata.market_data import MarketData
 from nubra_python_sdk.refdata.instruments import InstrumentData
 
-# Create SDK for NSE with OTP support
-try:
-    sdk_nse = InitNubraSdk(
-        NubraEnv.PROD,
-        env_creds=True
-    )
-except Exception as e:
-    # If OTP is being requested, it will happen here
-    # The user will see a prompt in the terminal
-    print(f"SDK Initialization: {str(e)}")
-    print("If OTP prompt appears, check the terminal/console window and enter the OTP there.")
-    raise
+# Global variables for SDK
+sdk_nse = None
+market_nse = None
+instruments_data = None
 
-market_nse = MarketData(sdk_nse)
-instruments_data = InstrumentData(sdk_nse)
+def initialize_sdk_with_otp(otp=None):
+    """Initialize SDK with optional OTP"""
+    global sdk_nse, market_nse, instruments_data
+    
+    try:
+        if otp:
+            os.environ["OTP"] = otp
+        
+        sdk_nse = InitNubraSdk(
+            NubraEnv.PROD,
+            env_creds=True
+        )
+        market_nse = MarketData(sdk_nse)
+        instruments_data = InstrumentData(sdk_nse)
+        return True, "SDK initialized successfully"
+    
+    except Exception as e:
+        error_msg = str(e)
+        # Check if it's asking for OTP
+        if "otp" in error_msg.lower() or "OTP" in error_msg:
+            return False, f"OTP Required: {error_msg}"
+        return False, f"Initialization Error: {error_msg}"
+
+# Try initial initialization
+try:
+    initialize_sdk_with_otp()
+except Exception as e:
+    print(f"SDK will be initialized after OTP entry: {str(e)}")
 
 def get_available_fno_instruments():
     """Return FNO-enabled instruments - only NSE supported"""
@@ -32,6 +52,11 @@ def get_available_fno_instruments():
 
 def get_exchange_for_instrument(instrument):
     """Return the appropriate exchange for the instrument"""
+    global market_nse
+    
+    if market_nse is None:
+        raise RuntimeError("SDK not initialized. Please verify OTP first.")
+    
     nse_instruments = {"NIFTY", "BANKNIFTY", "FINNIFTY"}
     
     if instrument in nse_instruments:
