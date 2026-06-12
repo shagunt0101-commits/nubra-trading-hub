@@ -1,7 +1,5 @@
 import pandas as pd
 import os
-import subprocess
-import sys
 from nubra_python_sdk.start_sdk import InitNubraSdk, NubraEnv
 from nubra_python_sdk.marketdata.market_data import MarketData
 from nubra_python_sdk.refdata.instruments import InstrumentData
@@ -10,10 +8,14 @@ from nubra_python_sdk.refdata.instruments import InstrumentData
 sdk_nse = None
 market_nse = None
 instruments_data = None
+_initialized = False
 
 def initialize_sdk_with_otp(otp=None):
     """Initialize SDK with optional OTP"""
-    global sdk_nse, market_nse, instruments_data
+    global sdk_nse, market_nse, instruments_data, _initialized
+    
+    if _initialized and sdk_nse is not None:
+        return True, "SDK already initialized"
     
     try:
         if otp:
@@ -25,6 +27,7 @@ def initialize_sdk_with_otp(otp=None):
         )
         market_nse = MarketData(sdk_nse)
         instruments_data = InstrumentData(sdk_nse)
+        _initialized = True
         return True, "SDK initialized successfully"
     
     except Exception as e:
@@ -33,17 +36,6 @@ def initialize_sdk_with_otp(otp=None):
         if "otp" in error_msg.lower() or "OTP" in error_msg or "Enter OTP" in error_msg:
             return False, f"OTP Required: Please check your phone for the OTP message."
         return False, f"Initialization Error: {error_msg}"
-
-# Try initial initialization on import
-print("[Nubra SDK] Attempting initial initialization...")
-try:
-    success, msg = initialize_sdk_with_otp()
-    if success:
-        print(f"[Nubra SDK] ✓ {msg}")
-    else:
-        print(f"[Nubra SDK] ⚠ {msg}")
-except Exception as e:
-    print(f"[Nubra SDK] Error: {str(e)}")
 
 def get_available_fno_instruments():
     """Return FNO-enabled instruments - only NSE supported"""
