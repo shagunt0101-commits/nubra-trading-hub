@@ -6,3 +6,4 @@ python-dotenv>=1.0.0
 nubra-sdk==0.4.4
 requests>=2.31.0
 protobuf==6.31.1
+pytz>=2020.1
