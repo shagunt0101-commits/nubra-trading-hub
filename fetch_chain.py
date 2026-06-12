@@ -30,15 +30,20 @@ def initialize_sdk_with_otp(otp=None):
     except Exception as e:
         error_msg = str(e)
         # Check if it's asking for OTP
-        if "otp" in error_msg.lower() or "OTP" in error_msg:
-            return False, f"OTP Required: {error_msg}"
+        if "otp" in error_msg.lower() or "OTP" in error_msg or "Enter OTP" in error_msg:
+            return False, f"OTP Required: Please check your phone for the OTP message."
         return False, f"Initialization Error: {error_msg}"
 
-# Try initial initialization
+# Try initial initialization on import
+print("[Nubra SDK] Attempting initial initialization...")
 try:
-    initialize_sdk_with_otp()
+    success, msg = initialize_sdk_with_otp()
+    if success:
+        print(f"[Nubra SDK] ✓ {msg}")
+    else:
+        print(f"[Nubra SDK] ⚠ {msg}")
 except Exception as e:
-    print(f"SDK will be initialized after OTP entry: {str(e)}")
+    print(f"[Nubra SDK] Error: {str(e)}")
 
 def get_available_fno_instruments():
     """Return FNO-enabled instruments - only NSE supported"""

@@ -63,6 +63,36 @@ if "otp_verified" not in st.session_state:
     st.session_state.otp_verified = False
 if "sdk_ready" not in st.session_state:
     st.session_state.sdk_ready = False
+if "initialization_attempted" not in st.session_state:
+    st.session_state.initialization_attempted = False
+
+# ==================== INITIALIZE SDK ON LOAD ====================
+def attempt_sdk_initialization():
+    """Try to initialize SDK, returns True if successful, False if OTP needed"""
+    try:
+        from fetch_chain import initialize_sdk_with_otp, get_available_fno_instruments
+        success, message = initialize_sdk_with_otp()
+        if success:
+            st.session_state.sdk_ready = True
+            st.session_state.otp_verified = True
+            return True
+        elif "OTP" in message or "otp" in message.lower():
+            # OTP is required, show the form
+            return False
+        else:
+            st.error(f"❌ SDK Initialization Error: {message}")
+            return False
+    except Exception as e:
+        error_msg = str(e)
+        if "otp" in error_msg.lower():
+            return False
+        st.error(f"❌ Critical Error: {error_msg}")
+        return False
+
+# Attempt initialization if not yet tried
+if not st.session_state.initialization_attempted:
+    st.session_state.initialization_attempted = True
+    st.session_state.sdk_ready = attempt_sdk_initialization()
 
 # ==================== OTP INPUT FORM ====================
 def show_otp_form():
@@ -106,8 +136,8 @@ def show_otp_form():
         if resend_btn:
             st.info("📱 Resending OTP to your registered phone number...")
 
-# Show OTP form if not verified
-if not st.session_state.otp_verified:
+# Show OTP form if SDK is not ready
+if not st.session_state.sdk_ready:
     show_otp_form()
     st.stop()
 
