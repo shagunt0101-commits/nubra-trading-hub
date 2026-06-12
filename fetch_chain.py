@@ -1,13 +1,21 @@
 import pandas as pd
+import os
 from nubra_python_sdk.start_sdk import InitNubraSdk, NubraEnv
 from nubra_python_sdk.marketdata.market_data import MarketData
 from nubra_python_sdk.refdata.instruments import InstrumentData
 
-# Create SDK for NSE
-sdk_nse = InitNubraSdk(
-    NubraEnv.PROD,
-    env_creds=True
-)
+# Create SDK for NSE with OTP support
+try:
+    sdk_nse = InitNubraSdk(
+        NubraEnv.PROD,
+        env_creds=True
+    )
+except Exception as e:
+    # If OTP is being requested, it will happen here
+    # The user will see a prompt in the terminal
+    print(f"SDK Initialization: {str(e)}")
+    print("If OTP prompt appears, check the terminal/console window and enter the OTP there.")
+    raise
 
 market_nse = MarketData(sdk_nse)
 instruments_data = InstrumentData(sdk_nse)

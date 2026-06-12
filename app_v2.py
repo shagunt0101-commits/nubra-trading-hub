@@ -58,6 +58,28 @@ except Exception as e:
     st.error(f"⚠️ Import Error: {e}")
     st.stop()
 
+# ==================== SESSION STATE ====================
+if "otp_verified" not in st.session_state:
+    st.session_state.otp_verified = False
+
+# ==================== OTP INPUT (if needed) ====================
+if not st.session_state.otp_verified:
+    st.info("🔐 Nubra SDK requires OTP verification. Check your phone for the OTP message.")
+    with st.form("otp_form"):
+        otp_input = st.text_input("Enter OTP:", type="password", placeholder="Enter 6-digit OTP")
+        submit_btn = st.form_submit_button("Verify OTP")
+        
+        if submit_btn and otp_input:
+            try:
+                # Try to use OTP with the SDK (if it supports it)
+                import os
+                os.environ["OTP"] = otp_input
+                st.session_state.otp_verified = True
+                st.success("OTP submitted! Reinitializing SDK...")
+                st.rerun()
+            except Exception as e:
+                st.error(f"OTP verification failed: {e}")
+
 # ==================== SIDEBAR CONTROLS ====================
 st.sidebar.markdown("### ⚙️ CONTROLS")
 
